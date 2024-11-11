@@ -27,6 +27,21 @@
             width: 100%;
             height: auto;
         }
+        .input-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 60%;
+            margin-right: 10px;
+            font-size: 1em;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+        }
     </style>
     <!-- Inclusion de la bibliothèque HLS.js -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -34,6 +49,11 @@
     <script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 </head>
 <body>
+    <div class="input-container">
+        <input type="text" id="videoUrl" placeholder="Entrez un lien .m3u8 ou .mp4" />
+        <button id="enterButton">Entrée</button>
+    </div>
+
     <div class="video-container">
         <video id="video" controls autoplay></video>
     </div>
@@ -42,23 +62,47 @@
     <button id="castButton">Diffuser sur un appareil</button>
 
     <script>
-        // Lien du flux vidéo en .m3u8
-        const videoSrc = "https://kwthvb28gp.azureedge.net/live/65b0b785aa88c/playlist.m3u8";
+        let videoSrc = ""; // Déclare la variable videoSrc
         const video = document.getElementById('video');
+        const videoUrlInput = document.getElementById('videoUrl');
+        const enterButton = document.getElementById('enterButton');
 
-        // Vérifie si le navigateur prend en charge HLS nativement
-        if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = videoSrc; // Si HLS est supporté nativement, on peut directement l'utiliser
-        } else if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(videoSrc);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play();
-            });
-        } else {
-            alert("Votre navigateur ne prend pas en charge la lecture de vidéos en streaming HLS.");
+        // Fonction pour charger la vidéo à partir du lien
+        function loadVideo() {
+            videoSrc = videoUrlInput.value.trim(); // Récupère et nettoie le lien entré
+            if (videoSrc) {
+                // Vérifie si le format du lien est correct (HLS ou MP4)
+                if (videoSrc.endsWith('.m3u8') || videoSrc.endsWith('.mp4')) {
+                    // Vérifie si le navigateur prend en charge HLS nativement
+                    if (video.canPlayType('application/vnd.apple.mpegurl') || videoSrc.endsWith('.mp4')) {
+                        video.src = videoSrc; // Si HLS ou MP4 est supporté, on peut directement l'utiliser
+                    } else if (Hls.isSupported() && videoSrc.endsWith('.m3u8')) {
+                        const hls = new Hls();
+                        hls.loadSource(videoSrc);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                            video.play();
+                        });
+                    } else {
+                        alert("Votre navigateur ne prend pas en charge la lecture de vidéos en streaming HLS.");
+                    }
+                } else {
+                    alert("Veuillez entrer un lien valide .m3u8 ou .mp4.");
+                }
+            } else {
+                alert("Veuillez entrer un lien.");
+            }
         }
+
+        // L'événement "click" sur le bouton "Entrée"
+        enterButton.addEventListener('click', loadVideo);
+
+        // L'événement "keypress" pour valider avec la touche "Enter"
+        videoUrlInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                loadVideo();
+            }
+        });
 
         // Initialisation de l'API Google Cast
         window['__onGCastApiAvailable'] = function(isAvailable) {
